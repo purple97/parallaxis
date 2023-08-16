@@ -1,0 +1,20 @@
+{
+  "name": "parallaxis",
+  "version": "1.0.0",
+  "description": "滚动视差库",
+  "main": "index.js",
+  "scripts": {
+    "build": ""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rematrix": "^0.7.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.20"
+  }
+}
