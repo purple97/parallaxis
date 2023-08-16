@@ -135,7 +135,7 @@ export function frameScripts(props: FrameScriptInfo) {
 }
 
 export function initializeFrameScripts(actionScripts: FrameScriptInfo | FrameScriptInfo[]): Array<FrameScripts | null> {
-    let scriptsArray = []
+    let scriptsArray: Array<FrameScripts | null> = []
     if (Array.isArray(actionScripts)) {
         scriptsArray = actionScripts.map(frameScripts);
     } else {

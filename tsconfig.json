@@ -1,0 +1,42 @@
+{
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "src"
+    ],
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "typeRoots": [
+            "./types"
+        ],
+        "noEmit": true,
+        // "outDir": "/dist"
+        /* Basic Options */
+        "module": "esnext",
+        "target": "ES2018",
+        "allowJs": true /* Allow javascript files to be compiled. */,
+        "checkJs": false,
+        "jsx": "react" /* Specify JSX code generation: 'preserve', 'react-native', or 'react'. */,
+        "sourceMap": false /* Generates corresponding '.map' file. */,
+        "preserveConstEnums": true /*Do not erase const enum declarations in generated code*/,
+        "skipLibCheck": true /* Skip type checking of all declaration files  */,
+        "removeComments": false /* Do not emit comments to output. */,
+        "strict": true /* Enable all strict type-checking options. */,
+        "strictNullChecks": true /* Enable strict null checks. */,
+        "noImplicitThis": true /* Raise error on 'this' expressions with an implied 'any' type. */,
+        "noUnusedLocals": true /* Report errors on unused locals. */,
+        "noUnusedParameters": false /* Report errors on unused parameters. */,
+        "moduleResolution": "node" /* Specify module resolution strategy: 'node' (Node.js) or 'classic' (TypeScript pre-1.6). */,
+        "baseUrl": "." /* Base directory to resolve non-absolute module names. */,
+        "paths": {},
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "lib": [
+            "dom",
+            "scripthost",
+            "es6",
+            "dom.iterable"
+        ]
+    }
+}
