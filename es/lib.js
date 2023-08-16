@@ -1,6 +1,5 @@
 import * as Rematrix from 'rematrix';
 var styleKeys = ['x', 'y', 'opacity', 'scale', 'rotate', 'rotateX', 'rotateY', 'rotateZ'];
-//判断两个对象是否相等
 export function isSameFrameInfo(prevFrameInfo, frameInfo) {
   var is = true;
   if (!prevFrameInfo || !frameInfo) return false;
@@ -12,7 +11,6 @@ export function isSameFrameInfo(prevFrameInfo, frameInfo) {
   });
   return is;
 }
-//判断是否支持该api
 export function isNative(api) {
   return typeof api === 'function' && /native code/.test(api.toString());
 }
@@ -98,10 +96,6 @@ export function initializeFrameScripts(actionScripts) {
   }
   return scriptsArray;
 }
-/*
-* 常规 transform 效果转 matrix 矩阵
-*/
-//TODO: 目前无法继承之前的matrix
 export function transformToMatrix(prevframeInfo, frameInfo) {
   if (frameInfo) {
     var x = frameInfo.x,

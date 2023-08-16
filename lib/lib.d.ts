@@ -35,7 +35,7 @@ export declare function analysisFrameScript({ start, sp }: {
     sp: number;
 }, progress: number): number;
 export declare function getFrameInfo(scrollProgress: number, scriptsMap: FrameScripts[], { beforeSupplement, afterSupplement }: any): Record<ScriptInfoKeys, number>;
-export declare function frameScripts(props: FrameScriptInfo): FrameScripts;
+export declare function frameScripts(props: FrameScriptInfo): FrameScripts | null;
 export declare function initializeFrameScripts(actionScripts: FrameScriptInfo | FrameScriptInfo[]): Array<FrameScripts | null>;
 export declare function transformToMatrix(prevframeInfo: Matrix, frameInfo: Record<ScriptInfoKeys, number>): Rematrix.Matrix;
 export declare function setParallaxisStyle(el: any, style: FrameStyle): void;

@@ -1,10 +1,9 @@
-import _objectSpread from "@babel/runtime/helpers/esm/objectSpread2";
 import React, { forwardRef, useRef, useEffect, useCallback } from 'react';
 import Parallaxis from '../Parallaxis';
 function getScrollY() {
   return window.scrollY || 0;
 }
-export var ScrollParallax = /*#__PURE__*/forwardRef(function (props, ref) {
+export var ScrollParallax = /*#__PURE__*/forwardRef(function (props, _ref) {
   var parallaxRef = useRef(null);
   var scriptsRef = useRef(null);
   var handleScroll = useCallback(function () {
@@ -15,7 +14,6 @@ export var ScrollParallax = /*#__PURE__*/forwardRef(function (props, ref) {
   }, [scriptsRef.current]);
   useEffect(function () {
     scriptsRef.current = new Parallaxis(parallaxRef.current, props);
-    //
     window.addEventListener("scroll", handleScroll, {
       passive: true
     });
@@ -28,7 +26,7 @@ export var ScrollParallax = /*#__PURE__*/forwardRef(function (props, ref) {
   }, []);
   return /*#__PURE__*/React.createElement("span", {
     ref: parallaxRef,
-    style: _objectSpread({
+    style: Object.assign({
       backfaceVisibility: "hidden",
       position: "relative",
       display: "inline-block",

@@ -8,7 +8,7 @@ function getScrollY() {
     return window.scrollY || 0;
 }
 
-export const ScrollParallax = forwardRef<{ animationScript: FrameScriptInfo[] }, any>((props, ref) => {
+export const ScrollParallax = forwardRef<{ animationScript: FrameScriptInfo[] }, any>((props, _ref) => {
     const parallaxRef = useRef(null);
     const scriptsRef = useRef<any>(null);
 

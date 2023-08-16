@@ -5,7 +5,7 @@ function isReact18() {
     return React.version.startsWith('18')
 }
 
-/* 
+/*
 * 挂载组件到指定元素
 */
 function ReactRender(Component: any, ele: HTMLElement) {
@@ -19,10 +19,10 @@ function ReactRender(Component: any, ele: HTMLElement) {
 }
 
 
-/* 
+/*
 * 网格 和 当前条滚动进度
 */
-export const Grid = forwardRef((props: any, ref: any) => {
+export const Grid = forwardRef((_props: any, ref: any) => {
     const [top, setTop] = useState(0);
     const [disabled, setDisabled] = useState(false);
 
@@ -51,7 +51,7 @@ export const Grid = forwardRef((props: any, ref: any) => {
     </div>
 })
 
-/* 
+/*
 * 添加网格组件到body，并监听window滚动事件
 */
 export const renderGrid: React.FC<{ container?: HTMLElement }> = (props) => {

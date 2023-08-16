@@ -1,4 +1,17 @@
-node_modules/
+.DS_Store
+.editorconfig
+.eslintignore
+.gitignore
+.prettierignore
+.prettierrc
+
+node_module/
+
+readme.md
+
+# prettier 格式化html可读性比较差
+**/*.html
+
 
 package-lock.json
 pnpm-lock.yaml
