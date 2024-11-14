@@ -3,7 +3,7 @@ import { initializeFrameScripts, setParallaxisStyle, getFrameInfo, transformToMa
 import type { FrameScriptInfo } from './lib'
 import * as Rematrix from 'rematrix'
 
-type FrameFunction = (style: any, scrollProgress: number, el: HTMLElement) => any
+type FrameFunction = (style: Record<string, any>, scrollProgress: number, el: HTMLElement) => { transform: string; opacity: number; }
 
 type OpstionType = {
     debug: boolean;
@@ -25,7 +25,7 @@ function getElementMatrix(el: any) {
     return matrixStyle
 }
 
-/* 
+/*
 * Parallaxis 视差动画类
 * @param {HTMLElement} el , 绑定动画的元素
 * @param {Object} opstion, 参数
@@ -45,16 +45,12 @@ export default class Parallaxis {
     frameFn?: FrameFunction;
     opstion?: OpstionType;
     intersectionObserver?: IntersectionObserver;
-    constructor(
-        el: HTMLElement | null,
-        opstion: OpstionType
-    ) {
+
+    constructor(el: HTMLElement | null, opstion: OpstionType) {
         const defaultOpstion: OpstionType = {
             duration: 0.1,
             transformOrigin: 'center',
-            style: {
-                willChange: 'transform'
-            },
+            style: { willChange: 'transform' },
             openIntersection: false,
             debug: false,
             animationScript: undefined
@@ -96,7 +92,7 @@ export default class Parallaxis {
     setStyle(scrollProgress: number) {
         const currentStyle = window.getComputedStyle(this.el, null)
         /* 获取当前进度的帧信息 */
-        const frameInfo = getFrameInfo(scrollProgress, this.el._animationScript, this.opstion)
+        const frameInfo = getFrameInfo(scrollProgress, this.el._animationScript, this.opstion as Pick<OpstionType, 'beforeSupplement' | 'afterSupplement'>)
         // 和上一帧动画内容相同,跳出;
         if (isSameFrameInfo(this.el.frameInfo, frameInfo)) {
             this.log(this.el.frameInfo, frameInfo)

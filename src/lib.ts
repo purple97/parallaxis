@@ -33,8 +33,8 @@ export type FrameScripts = {
     end: number;
     le: number;
 } & {
-        [key in ScriptInfoKeys]?: ActionScriptInfo;
-    }
+    [key in ScriptInfoKeys]?: ActionScriptInfo;
+}
 
 const styleKeys: ScriptInfoKeys[] = [
     'x', 'y', 'opacity', 'scale', 'rotate', 'rotateX', 'rotateY', 'rotateZ'
@@ -42,15 +42,9 @@ const styleKeys: ScriptInfoKeys[] = [
 
 //判断两个对象是否相等
 export function isSameFrameInfo(prevFrameInfo: Record<ScriptInfoKeys, number>, frameInfo: Record<ScriptInfoKeys, number>): boolean {
-    let is = true;
     if (!prevFrameInfo || !frameInfo) return false;
-    if (Object.keys(prevFrameInfo).length !== Object.keys(frameInfo).length) return false
-    styleKeys.forEach(k => {
-        if (prevFrameInfo[k] !== frameInfo[k]) {
-            is = false
-        }
-    })
-    return is
+    if (Object.keys(prevFrameInfo).length !== Object.keys(frameInfo).length) return false;
+    return styleKeys.every(k => prevFrameInfo[k] === frameInfo[k]);
 }
 
 //判断是否支持该api
@@ -69,37 +63,45 @@ export function analysisFrameScript({ start, sp }: { start: number, sp: number }
 export function getFrameInfo(scrollProgress: number, scriptsMap: FrameScripts[], {
     beforeSupplement = 0,
     afterSupplement = 20
-}: any): Record<ScriptInfoKeys, number> {
+}: { beforeSupplement?: number; afterSupplement?: number }): Record<ScriptInfoKeys, number> {
     const frameInfo = {} as Record<ScriptInfoKeys, number>
+
     scriptsMap.forEach((item: FrameScripts) => {
         if (item.start <= scrollProgress && scrollProgress <= item.end) {
-            const progress = scrollProgress - item.start
+            const progress = scrollProgress - item.start;
             styleKeys.forEach(key => {
-                if (item[key]) frameInfo[key] = analysisFrameScript(item[key] as ActionScriptInfo, progress)
-            })
-        } else if (beforeSupplement > 0 && scrollProgress < item.start && scrollProgress >= item.start - beforeSupplement) {
-            styleKeys.forEach(key => {
-                if (item[key]) frameInfo[key] = (item[key] as ActionScriptInfo).start
-            })
-        } else if (afterSupplement > 0 && scrollProgress > item.end && scrollProgress <= item.end + afterSupplement) {
-            styleKeys.forEach(key => {
-                if (item[key]) frameInfo[key] = (item[key] as ActionScriptInfo).end
-            })
+                if (item[key]) frameInfo[key] = analysisFrameScript(item[key] as ActionScriptInfo, progress);
+            });
+        } else {
+            handleSupplement(scrollProgress, item, beforeSupplement, afterSupplement, frameInfo);
         }
     })
     return frameInfo
 }
 
-function fromatScriptInfo(data: number | Array<number>, le: number): ActionScriptInfo {
+
+function handleSupplement(scrollProgress: number, item: FrameScripts, beforeSupplement: number, afterSupplement: number, frameInfo: Record<ScriptInfoKeys, number>) {
+    if (beforeSupplement > 0 && scrollProgress < item.start && scrollProgress >= item.start - beforeSupplement) {
+        styleKeys.forEach(key => {
+            if (item[key]) frameInfo[key] = (item[key] as ActionScriptInfo).start;
+        });
+    } else if (afterSupplement > 0 && scrollProgress > item.end && scrollProgress <= item.end + afterSupplement) {
+        styleKeys.forEach(key => {
+            if (item[key]) frameInfo[key] = (item[key] as ActionScriptInfo).end;
+        });
+    }
+}
+
+
+function formatScriptInfo(data: number | Array<number>, le: number): ActionScriptInfo {
     const obj: ActionScriptInfo = {
         start: 0,
         end: 0,
         l: 0,
         sp: 0,
-        value: 0
+        value: data
     };
 
-    obj.value = data
     if (Array.isArray(data)) {
         obj.start = data[0]
         obj.end = data[1]
@@ -115,7 +117,7 @@ function fromatScriptInfo(data: number | Array<number>, le: number): ActionScrip
     return obj
 }
 
-export function frameScripts(props: FrameScriptInfo) {
+export function frameScripts(props: FrameScriptInfo): FrameScripts | null {
     const { start, end } = props;
     if (end <= start) return null
     const le = end - start;
@@ -128,20 +130,14 @@ export function frameScripts(props: FrameScriptInfo) {
 
     styleKeys.forEach((key: string) => {
         if (props[key as ScriptInfoKeys] !== undefined) {
-            script[key as ScriptInfoKeys] = fromatScriptInfo(props[key as ScriptInfoKeys] as number | Array<number>, le);
+            script[key as ScriptInfoKeys] = formatScriptInfo(props[key as ScriptInfoKeys] as number | Array<number>, le);
         }
     })
     return script
 }
 
 export function initializeFrameScripts(actionScripts: FrameScriptInfo | FrameScriptInfo[]): Array<FrameScripts | null> {
-    let scriptsArray: Array<FrameScripts | null> = []
-    if (Array.isArray(actionScripts)) {
-        scriptsArray = actionScripts.map(frameScripts);
-    } else {
-        scriptsArray = [frameScripts(actionScripts)]
-    }
-    return scriptsArray
+    return Array.isArray(actionScripts) ? actionScripts.map(frameScripts) : [frameScripts(actionScripts)];
 }
 
 /*
@@ -150,8 +146,9 @@ export function initializeFrameScripts(actionScripts: FrameScriptInfo | FrameScr
 //TODO: 目前无法继承之前的matrix
 export function transformToMatrix(prevframeInfo: Matrix, frameInfo: Record<ScriptInfoKeys, number>) {
     if (frameInfo) {
-        let { x, y, scale, rotate, rotateX, rotateY, rotateZ } = frameInfo;
         const matrixArray = []
+        let { x, y, scale, rotate, rotateX, rotateY, rotateZ } = frameInfo;
+
         if (x != undefined) matrixArray.push(Rematrix.translateX(x))
         if (y != undefined) matrixArray.push(Rematrix.translateY(y))
         if (scale != undefined && scale >= 0) matrixArray.push(Rematrix.scale(scale))
