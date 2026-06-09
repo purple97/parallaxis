@@ -1,16 +1,7 @@
 import _slicedToArray from "@babel/runtime/helpers/esm/slicedToArray";
 import React, { useState, useEffect, forwardRef, useRef, useImperativeHandle, useCallback } from 'react';
+import { createRoot } from 'react-dom/client';
 import './style/grid.less';
-function isReact18() {
-  return React.version.startsWith('18');
-}
-function ReactRender(Component, ele) {
-  if (isReact18()) {
-    require('react-dom/client').createRoot(ele).render(Component);
-  } else {
-    require('react-dom').default.render(Component, ele);
-  }
-}
 export var Grid = /*#__PURE__*/forwardRef(function (_props, ref) {
   var _useState = useState(0),
     _useState2 = _slicedToArray(_useState, 2),
@@ -53,26 +44,29 @@ export var renderGrid = function renderGrid(props) {
     var _a;
     var scrollTop = props.container ? props.container.scrollTop : window.scrollY;
     (_a = gridRef.current) === null || _a === void 0 ? void 0 : _a.updateValue(scrollTop);
-  }, [gridRef.current, props.container]);
-  var Component = /*#__PURE__*/React.createElement(Grid, Object.assign({
-    ref: gridRef
-  }, props));
+  }, [props.container]);
   useEffect(function () {
+    var _a;
     var ele = document.createElement('div');
     ele.className = '__ParallaxisGrid__';
     document.body.appendChild(ele);
-    ReactRender(Component, ele);
-    window.addEventListener("scroll", handleScroll, {
+    var root = createRoot(ele);
+    root.render(/*#__PURE__*/React.createElement(Grid, Object.assign({
+      ref: gridRef
+    }, props)));
+    var scrollTarget = (_a = props.container) !== null && _a !== void 0 ? _a : window;
+    scrollTarget.addEventListener("scroll", handleScroll, {
       passive: true
     });
     setTimeout(function () {
       handleScroll();
     }, 10);
     return function () {
+      root.unmount();
       document.body.removeChild(ele);
-      window.removeEventListener("scroll", handleScroll);
+      scrollTarget.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [handleScroll, props.container]);
   return null;
 };
 export default renderGrid;

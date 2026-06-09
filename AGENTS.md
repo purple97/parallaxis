@@ -6,6 +6,7 @@
 
 ## 重点阅读路径
 
+- `docs/v2-design-decisions.md`: v2 大版本动画求值模型的核心设计决策，改核心算法前必须先读。
 - `src/index.ts`: 对外导出入口。
 - `src/Parallaxis.ts`: 核心运行时类，负责初始化脚本、按滚动进度播放动画、处理 IntersectionObserver。
 - `src/lib.ts`: 帧脚本解析、补帧、样式矩阵计算等核心算法。

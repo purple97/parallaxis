@@ -1,23 +1,6 @@
 import React, { useState, useEffect, forwardRef, useRef, useImperativeHandle, useCallback } from 'react';
+import { createRoot } from 'react-dom/client';
 import './style/grid.less';
-
-function isReact18() {
-    return React.version.startsWith('18')
-}
-
-/*
-* 挂载组件到指定元素
-*/
-function ReactRender(Component: any, ele: HTMLElement) {
-    if (isReact18()) {
-        //@ts-ignore
-        require('react-dom/client').createRoot(ele).render(Component);
-    } else {
-        //@ts-ignore
-        require('react-dom').default.render(Component, ele);
-    }
-}
-
 
 /*
 * 网格 和 当前条滚动进度
@@ -60,16 +43,17 @@ export const renderGrid: React.FC<{ container?: HTMLElement }> = (props) => {
     const handleScroll = useCallback(() => {
         const scrollTop = props.container ? props.container.scrollTop : window.scrollY;
         gridRef.current?.updateValue(scrollTop)
-    }, [gridRef.current, props.container])
-
-    const Component = <Grid ref={gridRef} {...props} />
+    }, [props.container])
 
     useEffect(() => {
         const ele = document.createElement('div');
         ele.className = '__ParallaxisGrid__';
         document.body.appendChild(ele);
-        ReactRender(Component, ele)
-        window.addEventListener("scroll", handleScroll, { passive: true });
+        const root = createRoot(ele);
+        root.render(<Grid ref={gridRef} {...props} />);
+
+        const scrollTarget: HTMLElement | Window = props.container ?? window;
+        scrollTarget.addEventListener("scroll", handleScroll, { passive: true });
 
         // window.addEventListener("resize", handleScroll, { passive: true });
 
@@ -78,10 +62,11 @@ export const renderGrid: React.FC<{ container?: HTMLElement }> = (props) => {
         }, 10);
 
         return () => {
+            root.unmount();
             document.body.removeChild(ele);
-            window.removeEventListener("scroll", handleScroll);
+            scrollTarget.removeEventListener("scroll", handleScroll);
         }
-    }, [])
+    }, [handleScroll, props.container])
 
     return null
 }

@@ -1,136 +1,196 @@
+import {
+    normalizeLegacyAnimationScript,
+    normalizeTimeline,
+    resolveState,
+    visualStateToStyle,
+} from './core';
+import type {
+    Diagnostic,
+    LegacyAnimationInput,
+    NormalizedTimelineSegment,
+    TimelineInput,
+    VisualState,
+} from './core';
+import { isNative, isSameFrameInfo, setParallaxisStyle } from './lib';
+import type { FrameStyle } from './lib';
 
-import { initializeFrameScripts, setParallaxisStyle, getFrameInfo, transformToMatrix, isSameFrameInfo, isNative } from './lib'
-import type { FrameScriptInfo } from './lib'
-import * as Rematrix from 'rematrix'
+type FrameFunction = (
+    style: FrameStyle,
+    scrollProgress: number,
+    el: HTMLElement,
+    state: VisualState,
+) => FrameStyle | void;
 
-type FrameFunction = (style: Record<string, any>, scrollProgress: number, el: HTMLElement) => { transform: string; opacity: number; }
+export type ScrollAxis = 'y' | 'x';
 
-type OpstionType = {
-    debug: boolean;
-    frameFn?: FrameFunction; // 每帧回调
-    beforeSupplement?: number; // 前补帧，默认0
-    afterSupplement?: number; // 后补帧，默认20
-    // initialStyle?: FrameScriptInfo;
-    // endStyle?: FrameScriptInfo;
-    animationScript?: FrameScriptInfo | FrameScriptInfo[]; //必传，动画脚本
-    transformOrigin?: string; // 旋转中心
-    duration?: number; // 动画过度时长，默认0.1，建议0.1~0.3
-    style?: any;
-    openIntersection: boolean; //false, 开启后会在元素进入视口后才会执行动画，但是离开视口后不会执行动画。飞入飞出效果需要注意
+export type ReducedMotion = 'respect' | 'ignore';
+
+export type ParallaxisOption = {
+    debug?: boolean;
+    frameFn?: FrameFunction;
+    /** @deprecated v2 core no longer relies on supplement frames. */
+    beforeSupplement?: number;
+    /** @deprecated v2 core no longer relies on supplement frames. */
+    afterSupplement?: number;
+    /** @deprecated Use timeline as the primary v2 API. */
+    animationScript?: LegacyAnimationInput;
+    timeline?: TimelineInput;
+    transformOrigin?: string;
+    duration?: number;
+    style?: FrameStyle & Record<string, string | number | undefined>;
+    openIntersection?: boolean;
+    container?: HTMLElement;
+    axis?: ScrollAxis;
+    reducedMotion?: ReducedMotion;
+};
+
+const defaultOption: Required<Pick<
+    ParallaxisOption,
+    'duration' | 'transformOrigin' | 'style' | 'openIntersection' | 'debug' | 'axis' | 'reducedMotion'
+>> = {
+    duration: 0.1,
+    transformOrigin: 'center',
+    style: { willChange: 'transform' },
+    openIntersection: false,
+    debug: false,
+    axis: 'y',
+    reducedMotion: 'respect',
+};
+
+function shouldReduceMotion(option: ParallaxisOption): boolean {
+    if (option.reducedMotion === 'ignore') return false;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-function getElementMatrix(el: any) {
-    const oldStyle = window.getComputedStyle(el).getPropertyValue('transform');
-    const matrixStyle = Rematrix.fromString(oldStyle);
-    return matrixStyle
+function getWindowScroll(axis: ScrollAxis): number {
+    return axis === 'x'
+        ? window.scrollX || window.pageXOffset || 0
+        : window.scrollY || window.pageYOffset || 0;
+}
+
+function getContainerScroll(container: HTMLElement, axis: ScrollAxis): number {
+    return axis === 'x' ? container.scrollLeft : container.scrollTop;
+}
+
+function getFinalScrollProgress(segments: NormalizedTimelineSegment[]): number {
+    return segments.reduce((max, segment) => Math.max(max, segment.range[1]), 0);
+}
+
+function warnDiagnostics(diagnostics: Diagnostic[], debug?: boolean) {
+    if (!debug || diagnostics.length === 0) return;
+    diagnostics.forEach((diagnostic) => {
+        console.warn(`[parallaxis] ${diagnostic.message}`, diagnostic);
+    });
 }
 
 /*
 * Parallaxis 视差动画类
-* @param {HTMLElement} el , 绑定动画的元素
-* @param {Object} opstion, 参数
-*   {
-*    debug: boolean;
-*    frameFn?: FrameFunction; // 每帧回调
-*    beforeSupplement?: number; // 前补帧，默认0
-*    afterSupplement?: number; // 后补帧，默认20
-*    animationScript: FrameScriptInfo | FrameScriptInfo[]; //必传，动画脚本
-*    transformOrigin?: string; // 旋转中心
-*    duration?: number; // 动画过度时长，默认0.1，建议0.1~0.3
-*   }
 */
 export default class Parallaxis {
-    el: any;
+    el: HTMLElement | null;
     isView: boolean;
     frameFn?: FrameFunction;
-    opstion?: OpstionType;
+    option: ParallaxisOption;
     intersectionObserver?: IntersectionObserver;
+    segments: NormalizedTimelineSegment[];
+    prevState?: VisualState;
 
-    constructor(el: HTMLElement | null, opstion: OpstionType) {
-        const defaultOpstion: OpstionType = {
-            duration: 0.1,
-            transformOrigin: 'center',
-            style: { willChange: 'transform' },
-            openIntersection: false,
-            debug: false,
-            animationScript: undefined
-        }
-
+    constructor(el: HTMLElement | null, option: ParallaxisOption) {
         this.el = el;
-        this.opstion = Object.assign(defaultOpstion, opstion);
-        defaultOpstion.style.transition = `all ${defaultOpstion.duration}s linear`;
-        this.isView = this.opstion.openIntersection ?? true;
-        // this.el.style.transform = 'translate3d(0px,0px,0px)'; //开启显卡3d加速
-        if (this.opstion.style) {
-            setParallaxisStyle(this.el, this.opstion.style);
-        }
-        if (opstion.animationScript) {
-            // 初始化动画脚本
-            this.el._animationScript = initializeFrameScripts(opstion.animationScript)
-            this.frameFn = opstion?.frameFn
-            // this.log(this.el._animationScript)
+        this.option = {
+            ...defaultOption,
+            ...option,
+            style: {
+                ...defaultOption.style,
+                ...option.style,
+            },
+        };
+        this.option.style = {
+            ...this.option.style,
+            transition: `all ${this.option.duration}s linear`,
+        };
+        this.isView = this.option.openIntersection ? false : true;
+        this.frameFn = this.option.frameFn;
+        this.segments = [];
 
-            // 判断是否支持IntersectionObserver
-            if (this.opstion.openIntersection && isNative(IntersectionObserver)) {
-                this.bindViewport()
-            } else {
-                this.isView = true;
-            }
+        if (!this.el) return;
+
+        if (this.option.style) {
+            setParallaxisStyle(this.el, this.option.style);
+        }
+
+        const normalizeResult = this.option.timeline
+            ? normalizeTimeline(this.option.timeline)
+            : this.option.animationScript
+                ? normalizeLegacyAnimationScript(this.option.animationScript)
+                : null;
+
+        if (!normalizeResult) {
+            console.error('缺少参数: timeline 或 animationScript');
+            return;
+        }
+
+        this.segments = normalizeResult.segments;
+        warnDiagnostics(normalizeResult.diagnostics, this.option.debug);
+
+        if (this.option.openIntersection && isNative(IntersectionObserver)) {
+            this.bindViewport();
         } else {
-            console.error('缺少参数:animationScript')
+            this.isView = true;
         }
-
     }
 
     bindViewport() {
+        if (!this.el) return;
         this.intersectionObserver = new IntersectionObserver((entries) => {
-            this.isView = entries[0].intersectionRatio > 0
+            this.isView = entries[0].intersectionRatio > 0;
         });
         this.intersectionObserver.observe(this.el);
     }
 
+    getScrollProgress(): number {
+        const axis = this.option.axis ?? 'y';
+        if (this.option.container) return getContainerScroll(this.option.container, axis);
+        return getWindowScroll(axis);
+    }
+
     setStyle(scrollProgress: number) {
-        const currentStyle = window.getComputedStyle(this.el, null)
-        /* 获取当前进度的帧信息 */
-        const frameInfo = getFrameInfo(scrollProgress, this.el._animationScript, this.opstion as Pick<OpstionType, 'beforeSupplement' | 'afterSupplement'>)
-        // 和上一帧动画内容相同,跳出;
-        if (isSameFrameInfo(this.el.frameInfo, frameInfo)) {
-            this.log(this.el.frameInfo, frameInfo)
+        if (!this.el || this.segments.length === 0) return;
+
+        const progress = shouldReduceMotion(this.option)
+            ? getFinalScrollProgress(this.segments)
+            : scrollProgress;
+        const state = resolveState(progress, this.segments);
+
+        if (this.prevState && isSameFrameInfo(this.prevState, state)) {
+            this.log(this.prevState, state);
             return;
         }
 
-        if (Object.keys(frameInfo).length > 0) {
-            this.el.frameInfo = frameInfo
-            const currentMatrix = getElementMatrix(this.el);
-            const matrix = transformToMatrix(currentMatrix, frameInfo)
-            // console.log(frameInfo)
-            let style = {
-                transform: Rematrix.toString(matrix),
-                opacity: frameInfo.opacity !== undefined ? frameInfo.opacity : Number(currentStyle.getPropertyValue('opacity'))
-            }
-            this.log(scrollProgress, frameInfo)
-            if (this.frameFn) {
-                style = this.frameFn(style, scrollProgress, this.el) || style
-            }
-            //
-            if (style) {
-                setParallaxisStyle(this.el, style);
-            }
-        }
+        this.prevState = state;
+        const baseStyle = visualStateToStyle(state);
+        const style = this.frameFn?.(baseStyle, progress, this.el, state) || baseStyle;
 
+        this.log(progress, state);
+        setParallaxisStyle(this.el, style);
     }
 
-    play(scrollProgress: number) {
+    play(scrollProgress = this.getScrollProgress()) {
         if (this.isView) this.setStyle(Math.round(scrollProgress));
     }
 
     disconnect() {
-        this.el.style.willChange = "auto";
-        this.intersectionObserver?.disconnect()
+        if (this.el) this.el.style.willChange = 'auto';
+        this.intersectionObserver?.disconnect();
+        this.intersectionObserver = undefined;
+        this.prevState = undefined;
+        this.segments = [];
+        this.frameFn = undefined;
+        this.el = null;
     }
 
-    log(...args: any[]) {
-        if (this.opstion?.debug) console.log(...args)
+    log(...args: unknown[]) {
+        if (this.option.debug) console.log(...args);
     }
-
 }

@@ -1,38 +1,30 @@
-import React, { forwardRef, useRef, useEffect, useCallback } from 'react';
-import Parallaxis from '../Parallaxis';
-function getScrollY() {
-  return window.scrollY || 0;
-}
-export var ScrollParallax = /*#__PURE__*/forwardRef(function (props, _ref) {
-  var parallaxRef = useRef(null);
-  var scriptsRef = useRef(null);
-  var handleScroll = useCallback(function () {
-    if (scriptsRef.current) {
-      var scrollTop = getScrollY();
-      scriptsRef.current.play(scrollTop);
-    }
-  }, [scriptsRef.current]);
-  useEffect(function () {
-    scriptsRef.current = new Parallaxis(parallaxRef.current, props);
-    window.addEventListener("scroll", handleScroll, {
-      passive: true
-    });
-    setTimeout(function () {
-      handleScroll();
-    }, 0);
-    return function () {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+var __rest = this && this.__rest || function (s, e) {
+  var t = {};
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function") for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+    if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+  }
+  return t;
+};
+import React, { forwardRef, useImperativeHandle } from 'react';
+import { useParallaxis } from '../react/useParallaxis';
+export var ScrollParallax = /*#__PURE__*/forwardRef(function (props, ref) {
+  var children = props.children,
+    option = __rest(props, ["children"]);
+  var _useParallaxis = useParallaxis(option),
+    elementRef = _useParallaxis.elementRef;
+  useImperativeHandle(ref, function () {
+    return elementRef.current;
+  });
   return /*#__PURE__*/React.createElement("span", {
-    ref: parallaxRef,
+    ref: elementRef,
     style: Object.assign({
-      backfaceVisibility: "hidden",
-      position: "relative",
-      display: "inline-block",
-      userSelect: "initial",
-      pointerEvents: "initial",
-      width: "100%"
+      backfaceVisibility: 'hidden',
+      position: 'relative',
+      display: 'inline-block',
+      userSelect: 'initial',
+      pointerEvents: 'initial',
+      width: '100%'
     }, props.style)
-  }, props.children);
+  }, children);
 });

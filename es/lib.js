@@ -1,15 +1,11 @@
 import * as Rematrix from 'rematrix';
 var styleKeys = ['x', 'y', 'opacity', 'scale', 'rotate', 'rotateX', 'rotateY', 'rotateZ'];
 export function isSameFrameInfo(prevFrameInfo, frameInfo) {
-  var is = true;
   if (!prevFrameInfo || !frameInfo) return false;
   if (Object.keys(prevFrameInfo).length !== Object.keys(frameInfo).length) return false;
-  styleKeys.forEach(function (k) {
-    if (prevFrameInfo[k] !== frameInfo[k]) {
-      is = false;
-    }
+  return styleKeys.every(function (k) {
+    return prevFrameInfo[k] === frameInfo[k];
   });
-  return is;
 }
 export function isNative(api) {
   return typeof api === 'function' && /native code/.test(api.toString());
@@ -35,27 +31,31 @@ export function getFrameInfo(scrollProgress, scriptsMap, _ref2) {
       styleKeys.forEach(function (key) {
         if (item[key]) frameInfo[key] = analysisFrameScript(item[key], progress);
       });
-    } else if (beforeSupplement > 0 && scrollProgress < item.start && scrollProgress >= item.start - beforeSupplement) {
-      styleKeys.forEach(function (key) {
-        if (item[key]) frameInfo[key] = item[key].start;
-      });
-    } else if (afterSupplement > 0 && scrollProgress > item.end && scrollProgress <= item.end + afterSupplement) {
-      styleKeys.forEach(function (key) {
-        if (item[key]) frameInfo[key] = item[key].end;
-      });
+    } else {
+      handleSupplement(scrollProgress, item, beforeSupplement, afterSupplement, frameInfo);
     }
   });
   return frameInfo;
 }
-function fromatScriptInfo(data, le) {
+function handleSupplement(scrollProgress, item, beforeSupplement, afterSupplement, frameInfo) {
+  if (beforeSupplement > 0 && scrollProgress < item.start && scrollProgress >= item.start - beforeSupplement) {
+    styleKeys.forEach(function (key) {
+      if (item[key]) frameInfo[key] = item[key].start;
+    });
+  } else if (afterSupplement > 0 && scrollProgress > item.end && scrollProgress <= item.end + afterSupplement) {
+    styleKeys.forEach(function (key) {
+      if (item[key]) frameInfo[key] = item[key].end;
+    });
+  }
+}
+function formatScriptInfo(data, le) {
   var obj = {
     start: 0,
     end: 0,
     l: 0,
     sp: 0,
-    value: 0
+    value: data
   };
-  obj.value = data;
   if (Array.isArray(data)) {
     obj.start = data[0];
     obj.end = data[1];
@@ -82,22 +82,17 @@ export function frameScripts(props) {
   };
   styleKeys.forEach(function (key) {
     if (props[key] !== undefined) {
-      script[key] = fromatScriptInfo(props[key], le);
+      script[key] = formatScriptInfo(props[key], le);
     }
   });
   return script;
 }
 export function initializeFrameScripts(actionScripts) {
-  var scriptsArray = [];
-  if (Array.isArray(actionScripts)) {
-    scriptsArray = actionScripts.map(frameScripts);
-  } else {
-    scriptsArray = [frameScripts(actionScripts)];
-  }
-  return scriptsArray;
+  return Array.isArray(actionScripts) ? actionScripts.map(frameScripts) : [frameScripts(actionScripts)];
 }
 export function transformToMatrix(prevframeInfo, frameInfo) {
   if (frameInfo) {
+    var matrixArray = [];
     var x = frameInfo.x,
       y = frameInfo.y,
       scale = frameInfo.scale,
@@ -105,7 +100,6 @@ export function transformToMatrix(prevframeInfo, frameInfo) {
       rotateX = frameInfo.rotateX,
       rotateY = frameInfo.rotateY,
       rotateZ = frameInfo.rotateZ;
-    var matrixArray = [];
     if (x != undefined) matrixArray.push(Rematrix.translateX(x));
     if (y != undefined) matrixArray.push(Rematrix.translateY(y));
     if (scale != undefined && scale >= 0) matrixArray.push(Rematrix.scale(scale));

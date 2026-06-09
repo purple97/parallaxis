@@ -5,6 +5,7 @@
         "baseUrl": "." /* Base directory to resolve non-absolute module names. */,
         "declaration": true,
         "esModuleInterop": true,
+        "ignoreDeprecations": "6.0",
         "experimentalDecorators": true,
         "forceConsistentCasingInFileNames": true,
         "isolatedModules": false,

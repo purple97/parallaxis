@@ -1,27 +1,37 @@
-import type { FrameScriptInfo } from './lib';
-type FrameFunction = (style: any, scrollProgress: number, el: HTMLElement) => any;
-type OpstionType = {
-    debug: boolean;
+import type { LegacyAnimationInput, NormalizedTimelineSegment, TimelineInput, VisualState } from './core';
+import type { FrameStyle } from './lib';
+type FrameFunction = (style: FrameStyle, scrollProgress: number, el: HTMLElement, state: VisualState) => FrameStyle | void;
+export type ScrollAxis = 'y' | 'x';
+export type ReducedMotion = 'respect' | 'ignore';
+export type ParallaxisOption = {
+    debug?: boolean;
     frameFn?: FrameFunction;
     beforeSupplement?: number;
     afterSupplement?: number;
-    animationScript?: FrameScriptInfo | FrameScriptInfo[];
+    animationScript?: LegacyAnimationInput;
+    timeline?: TimelineInput;
     transformOrigin?: string;
     duration?: number;
-    style?: any;
-    openIntersection: boolean;
+    style?: FrameStyle & Record<string, string | number | undefined>;
+    openIntersection?: boolean;
+    container?: HTMLElement;
+    axis?: ScrollAxis;
+    reducedMotion?: ReducedMotion;
 };
 export default class Parallaxis {
-    el: any;
+    el: HTMLElement | null;
     isView: boolean;
     frameFn?: FrameFunction;
-    opstion?: OpstionType;
+    option: ParallaxisOption;
     intersectionObserver?: IntersectionObserver;
-    constructor(el: HTMLElement | null, opstion: OpstionType);
+    segments: NormalizedTimelineSegment[];
+    prevState?: VisualState;
+    constructor(el: HTMLElement | null, option: ParallaxisOption);
     bindViewport(): void;
+    getScrollProgress(): number;
     setStyle(scrollProgress: number): void;
-    play(scrollProgress: number): void;
+    play(scrollProgress?: number): void;
     disconnect(): void;
-    log(...args: any[]): void;
+    log(...args: unknown[]): void;
 }
 export {};

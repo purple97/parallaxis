@@ -1,55 +1,214 @@
-# Parallax 视差动画库
-- 滚动视差库
-- React组件 "ScrollParallax" 通过滚动进度来实现视差
+# Parallaxis
 
-## ScrollParallax 快速上手
+React 滚动视差库。v2 以 `timeline` 作为主 API，把动画定义为“滚动位置到视觉状态”的函数。
 
+```text
+visualState = parallaxis(scrollY)
+```
 
-```js
+这意味着任意滚动位置都应该能解析出稳定、完整、可预测的视觉状态，而不是依赖滚动事件是否刚好经过某一帧。
 
-import { ScrollParallax, Grid } from 'parallax'
+## 安装
 
-const animationScript = [
-    { start: 200, x: 1000, y: 1000, end: 2000 },
-    { start: 800, opacity: [1, 0.3], scale: [1, 1.3], end: 2400 },
-    { start: 1200, rotate: [0, 120], end: 2000 },
-    { start: 2000, x: [1000, 400], y: [1000, 1600], rotate: [120, 360], end: 2400 },
-]
+```bash
+pnpm add parallaxis
+```
 
-const app = ()=>{
-    return <>
-        {/* 显示标尺 */}
-        <Grid/>
+`react` 和 `react-dom` 是 peer dependencies，宿主项目需要自行安装 React 18 或更高版本。
 
-        <div className='parallax-box' style={{ height:3000, widht:'100vw', position:'relative' }}>
-            <div style={{ width: 400, height: 200, position: 'relative', top: 800 }}>
-                <ScrollParallax animationScript={animationScript} debug={false}>
-                    <h1>Parallaxis.js</h1>
-                </ScrollParallax>
-            </div>
-        </div>
-    </>
+## 快速上手
+
+```tsx
+import { ScrollParallax, Grid } from 'parallaxis';
+
+export function App() {
+    return (
+        <>
+            <Grid />
+
+            <ScrollParallax
+                timeline={[
+                    {
+                        range: [0, 500],
+                        from: { x: 0, opacity: 1 },
+                        to: { x: 100, opacity: 0.5 },
+                        easing: 'easeOutCubic',
+                    },
+                    {
+                        range: [300, 600],
+                        from: { y: 0 },
+                        to: { y: 100 },
+                    },
+                ]}
+            >
+                <h1>Parallaxis</h1>
+            </ScrollParallax>
+        </>
+    );
 }
 ```
 
-## 参数
+## Timeline 语义
 
-- animationScript， 动画脚本
-- frameFn， 每帧执行前的回调函数，可以style修改并返回,  (element, style, scrollProgress) => style
-- debug， debug模式，打印每帧参数
-- beforeSupplement, 前追加帧，用来解决跳帧问题，默认0
-- afterSupplement, 后追加帧，用来解决跳帧问题，默认20 【注意这里默认值】
+`timeline` 表达某个滚动区间内的绝对视觉状态，不表达“在上一段基础上增加多少”。
+
+```tsx
+timeline={[
+    {
+        range: [600, 1000],
+        from: { x: 100, y: 100, opacity: 0.5 },
+        to: { x: 300, y: 300, opacity: 1 },
+    },
+]}
+```
+
+上面表示：
+
+- `x` 从 `100` 移动到 `300`
+- `y` 从 `100` 移动到 `300`
+- `opacity` 从 `0.5` 变到 `1`
+
+如果你想表达“在已有位置上再移动 200”，需要自己换算成绝对终态。也就是说，当前 `x = 100` 时，再移动 `200` 应写成 `to: { x: 300 }`，不是 `x: [100, 200]`。
+
+## Timeline 字段
+
+```ts
+type TimelineSegment = {
+    range: [number, number];
+    from?: PartialVisualState;
+    to: PartialVisualState;
+    easing?: EasingName | ((progress: number) => number);
+};
+```
+
+- `range`：滚动区间。
+- `from`：该区间起始处的绝对视觉状态。
+- `to`：该区间结束处的绝对视觉状态。
+- `easing`：片段级缓动，默认 `linear`。
+
+支持的视觉属性：
+
+- `x`
+- `y`
+- `opacity`
+- `scale`
+- `rotate`
+- `rotateX`
+- `rotateY`
+- `rotateZ`
+
+默认视觉状态：
+
+```ts
+{
+    x: 0,
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    rotate: 0,
+    rotateX: 0,
+    rotateY: 0,
+    rotateZ: 0,
+}
+```
+
+## 重叠与继承
+
+多个片段可以重叠。规则是：
+
+- 同一个属性在同一个滚动位置被多个片段控制时，后声明的片段优先。
+- 不同属性按属性维度继承，后段只声明 `y` 不会覆盖前段的 `x`。
+- 同一个属性的两个非重叠区间之间，会保持上一段的 `to`。
+- 第一段之前保持第一段的 `from`，最后一段之后保持最后一段的 `to`。
+
+## ScrollParallax 参数
+
+```tsx
+<ScrollParallax
+    timeline={timeline}
+    container={containerRef}
+    axis="y"
+    reducedMotion="respect"
+    debug={false}
+    frameFn={(style, scrollProgress, element, state) => style}
+>
+    <div />
+</ScrollParallax>
+```
+
+- `timeline`：v2 主 API。
+- `animationScript`：legacy API，兼容旧版本。
+- `container`：自定义滚动容器，支持 `HTMLElement` 或 `RefObject<HTMLElement>`。
+- `axis`：滚动轴向，`'y' | 'x'`，默认 `'y'`。
+- `reducedMotion`：`'respect' | 'ignore'`，默认 `'respect'`。
+- `frameFn`：高级逃逸口，可在每帧拿到 resolved state 后修改最终样式。
+- `debug`：开启调试日志。
+- `beforeSupplement` / `afterSupplement`：legacy 参数，v2 core 不依赖补帧。
+
+## 原生类
+
+```ts
+import { Parallaxis } from 'parallaxis';
+
+const instance = new Parallaxis(element, {
+    timeline: [
+        {
+            range: [0, 500],
+            from: { x: 0 },
+            to: { x: 100 },
+        },
+    ],
+});
+
+window.addEventListener('scroll', () => {
+    instance.play();
+});
+```
+
+销毁时调用：
+
+```ts
+instance.disconnect();
+```
+
+## Grid
+
+`Grid` 是调试辅助工具，用于观察滚动位置和校准位移距离。
+
+```tsx
+import { Grid } from 'parallaxis';
+
+<Grid />;
+```
+
+它不是核心动画 API。
+
+## Legacy animationScript
+
+旧 API 仍然兼容：
+
+```tsx
+<ScrollParallax
+    animationScript={[
+        { start: 0, x: [0, 100], opacity: [1, 0.5], end: 500 },
+    ]}
+>
+    <div />
+</ScrollParallax>
+```
+
+v2 内部会把 `animationScript` normalize 到 `timeline` 再执行。新功能优先使用 `timeline`。
+
+迁移细节见 [docs/v1-to-v2-migration.md](docs/v1-to-v2-migration.md)。
 
 ## 浏览器验证
-
-项目提供了一个最小浏览器验证页，用来检查滚动驱动的位移、缩放、旋转和透明度效果。
 
 ```bash
 pnpm install
 pnpm run serve:example
 ```
 
-启动后打开终端输出的本地地址，默认是：
+默认地址：
 
 ```text
 http://127.0.0.1:5173/
@@ -63,19 +222,19 @@ http://127.0.0.1:5173/
 
 验证重点：
 
-- `ScrollParallax` 组件在滚动后是否产生 `transform` 和 `opacity` 变化。
-- `Parallaxis` 类直接实例化后是否能响应滚动。
+- `timeline` 是否产生正确的 `transform` 和 `opacity`。
+- legacy `animationScript` 是否仍然兼容。
+- 自定义滚动容器是否读取容器滚动进度。
+- `axis="x"` 是否读取横向滚动。
+- props 更新后动画实例是否重新生效。
+- `Grid` 是否能辅助观察滚动位置。
 - 浏览器控制台是否存在 error。
 
-## 问题
-- 跳帧，由于滚动条监听的频率导致进度数值 刚好 跳过动画结束（或切换）的那几帧，导致无法精确执行那几帧效果;
-    - 例如上面的例子中，需要在从2000~2400旋转到360度，有可能跳帧导致滚动条已经在2450的位置 但是才350度。
-- 效果继承问题，原因：效果计算后得到图形矩阵matrix，但是目前不支持matrix和常规效果互转。 有望修复
-```js
-//例子
-const animationScript = [
-    { start: 200, x: 1000, y: 1000, end: 2000 }, // 从200到2000，过程中x移动到1000，y移动到1000
-    { start: 1200, rotate: [0, 120], end: 2400 },// 如果这个或后面没设置 x，y的值，会导致2000~2400的400帧里丢失x和y
-    { start: 2000, x:[1000, 600], y:[1000, 1600], end:2400}  // 这里需要补后面那400帧 x和y的动效
-]
+## 开发
+
+```bash
+pnpm install
+pnpm test
+pnpm run typecheck
+pnpm run build
 ```
