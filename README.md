@@ -40,6 +40,33 @@ const app = ()=>{
 - beforeSupplement, 前追加帧，用来解决跳帧问题，默认0
 - afterSupplement, 后追加帧，用来解决跳帧问题，默认20 【注意这里默认值】
 
+## 浏览器验证
+
+项目提供了一个最小浏览器验证页，用来检查滚动驱动的位移、缩放、旋转和透明度效果。
+
+```bash
+pnpm install
+pnpm run serve:example
+```
+
+启动后打开终端输出的本地地址，默认是：
+
+```text
+http://127.0.0.1:5173/
+```
+
+验证页位置：
+
+- `examples/browser/index.html`
+- `examples/browser/main.tsx`
+- `examples/browser/styles.css`
+
+验证重点：
+
+- `ScrollParallax` 组件在滚动后是否产生 `transform` 和 `opacity` 变化。
+- `Parallaxis` 类直接实例化后是否能响应滚动。
+- 浏览器控制台是否存在 error。
+
 ## 问题
 - 跳帧，由于滚动条监听的频率导致进度数值 刚好 跳过动画结束（或切换）的那几帧，导致无法精确执行那几帧效果;
     - 例如上面的例子中，需要在从2000~2400旋转到360度，有可能跳帧导致滚动条已经在2450的位置 但是才350度。

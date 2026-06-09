@@ -7,7 +7,8 @@
   "types": "./es/index.d.ts",
   "scripts": {
     "build": "npm run delete && father-build",
-    "delete": "rm -rf dist && rm -rf es && rm -rf lib"
+    "delete": "rm -rf dist && rm -rf es && rm -rf lib",
+    "serve:example": "vite examples/browser --host 127.0.0.1"
   },
   "files": [
     "lib",
@@ -24,6 +25,8 @@
   },
   "devDependencies": {
     "@types/react": "^18.2.20",
-    "father-build": "^1.22.5"
+    "father-build": "^1.22.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
   }
 }
