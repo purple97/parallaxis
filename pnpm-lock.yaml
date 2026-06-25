@@ -30,6 +30,9 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
+      three:
+        specifier: ^0.184.0
+        version: 0.184.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -3872,6 +3875,9 @@ packages:
   test-exclude@5.2.3:
     resolution: {integrity: sha512-M+oxtseCFO3EDtAaGH7iiej3CBkzXqFMbzqYAACdzKui4eZA+pq3tZEwChvOdNfa7xxy8BfbmgJSIr43cC/+2g==}
     engines: {node: '>=6'}
+
+  three@0.184.0:
+    resolution: {integrity: sha512-wtTRjG92pM5eUg/KuUnHsqSAlPM296brTOcLgMRqEeylYTh/CdtvKUvCyyCQTzFuStieWxvZb8mVTMvdPyUpxg==}
 
   through2-filter@3.0.0:
     resolution: {integrity: sha512-jaRjI2WxN3W1V8/FMZ9HKIBXixtiqs3SQSX4/YGIiP3gL6djW48VoZq9tDqeCWs3MT8YY5wb/zli8VW8snY1CA==}
@@ -8632,6 +8638,8 @@ snapshots:
       minimatch: 3.1.5
       read-pkg-up: 4.0.0
       require-main-filename: 2.0.0
+
+  three@0.184.0: {}
 
   through2-filter@3.0.0:
     dependencies:
