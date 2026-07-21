@@ -1,3 +1,4 @@
+/* Solar system demo */
 * {
     box-sizing: border-box;
 }
@@ -46,7 +47,7 @@ button {
 
 main {
     position: relative;
-    min-height: 5200px;
+    min-height: 6500px;
     isolation: isolate;
 }
 
@@ -227,9 +228,10 @@ h2 {
     letter-spacing: 0;
 }
 
-.glass-panel h2 {
-    font-size: clamp(28px, 3.2vw, 44px);
-    line-height: 1.08;
+.glass-panel h2,
+.timeline-card h2 {
+    font-size: 32px;
+    line-height: 1.12;
 }
 
 .hero-copy p:not(.eyebrow),
@@ -315,6 +317,15 @@ h2 {
     min-height: 118vh;
 }
 
+.timeline-band > span {
+    position: fixed !important;
+    top: 24vh;
+    right: clamp(20px, 8vw, 116px);
+    z-index: 12;
+    width: min(720px, calc(100vw - 40px)) !important;
+    pointer-events: none;
+}
+
 .timeline-card {
     width: min(720px, calc(100vw - 40px));
 }
@@ -349,6 +360,15 @@ h2 {
     min-height: 90vh;
 }
 
+.finish-section > span {
+    position: fixed !important;
+    top: 28vh;
+    left: max(20px, calc(50vw - 280px));
+    z-index: 12;
+    width: min(560px, calc(100vw - 40px)) !important;
+    pointer-events: auto;
+}
+
 .finish-panel {
     text-align: center;
 }
@@ -364,7 +384,7 @@ h2 {
 
 @media (max-width: 760px) {
     main {
-        min-height: 5600px;
+        min-height: 6900px;
     }
 
     .top-nav {
@@ -411,6 +431,19 @@ h2 {
     .narrative-section > span {
         top: 24vh;
         right: auto;
+        left: 20px;
+        width: calc(100vw - 40px) !important;
+    }
+
+    .timeline-band > span {
+        top: 22vh;
+        right: auto;
+        left: 20px;
+        width: calc(100vw - 40px) !important;
+    }
+
+    .finish-section > span {
+        top: 24vh;
         left: 20px;
         width: calc(100vw - 40px) !important;
     }

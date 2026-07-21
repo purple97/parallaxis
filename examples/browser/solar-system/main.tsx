@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as THREE from 'three';
-import { ScrollParallax } from '../../src/components/ScrollParallax';
-import Parallaxis from '../../src/Parallaxis';
+import { ScrollParallax } from '../../../src/components/ScrollParallax';
+import Parallaxis from '../../../src/Parallaxis';
 import './styles.css';
 
 type PlanetConfig = {
@@ -21,6 +21,17 @@ type PlanetRuntime = {
     speed: number;
 };
 
+type NarrativePanelConfig = {
+    align: 'left' | 'right';
+    eyebrow: string;
+    title: string;
+    body: string;
+    range: [number, number];
+    fadeOut?: boolean;
+};
+
+type EasingType = 'easeOutCubic' | 'easeInOutCubic' | 'easeInCubic';
+
 const planets: PlanetConfig[] = [
     { name: 'Mercury', radius: 2.1, size: 0.09, color: '#d9d2c0', speed: 1.42, tiltX: 18, tiltZ: -12, offset: 0.2 },
     { name: 'Venus', radius: 2.8, size: 0.15, color: '#f2b469', speed: 1.12, tiltX: -10, tiltZ: 24, offset: 1.1 },
@@ -32,7 +43,7 @@ const planets: PlanetConfig[] = [
     { name: 'Neptune', radius: 9, size: 0.23, color: '#5c7cff', speed: 0.24, tiltX: -34, tiltZ: -18, offset: 3.7 },
 ];
 
-const narrativePanels = [
+const narrativePanels: NarrativePanelConfig[] = [
     {
         align: 'left',
         eyebrow: 'Scroll driven orbit',
@@ -67,33 +78,35 @@ const narrativePanels = [
         title: '漂亮之外，还要能证明库的能力',
         body: '这个 demo 保留 scrollY 和 active range，让它既像一个网站，也像一个可观察的动画验证页。',
         range: [4440, 5280],
+        fadeOut: true,
     },
 ];
 
+/* 运镜脚本 */
 const cameraTimeline = [
     {
         range: [0, 820],
-        from: { x: 0, y: 0, scale: 0.78, rotateX: 0, rotateY: 0, opacity: 1 },
-        to: { x: -1.4, y: 2.2, scale: 1.18, rotateX: 10, rotateY: -18, opacity: 1 },
-        easing: 'easeOutCubic' as const,
+        from: { x: 0, y: 0, scale: 0.78, rotateX: 0, rotateY: 0 },
+        to: { x: -1.4, y: 2.2, scale: 1.18, rotateX: 10, rotateY: -18 },
+        easing: 'easeOutCubic' as EasingType,
     },
     {
         range: [820, 1720],
-        from: { x: -1.4, y: 2.2, scale: 1.18, rotateX: 10, rotateY: -18, opacity: 1 },
-        to: { x: 2.2, y: -1.1, scale: 1.02, rotateX: -8, rotateY: 24, opacity: 1 },
-        easing: 'easeInOutCubic' as const,
+        from: { x: -1.4, y: 2.2, scale: 1.18, rotateX: 10, rotateY: -18 },
+        to: { x: 2.2, y: -1.1, scale: 1.02, rotateX: -8, rotateY: 24 },
+        easing: 'easeInOutCubic' as EasingType,
     },
     {
         range: [1720, 2860],
-        from: { x: 2.2, y: -1.1, scale: 1.02, rotateX: -8, rotateY: 24, opacity: 1 },
-        to: { x: -2.8, y: 0.7, scale: 1.36, rotateX: 18, rotateY: -36, opacity: 1 },
-        easing: 'easeInOutCubic' as const,
+        from: { x: 2.2, y: -1.1, scale: 1.02, rotateX: -8, rotateY: 24 },
+        to: { x: -2.8, y: 0.7, scale: 1.36, rotateX: 18, rotateY: -36 },
+        easing: 'easeInOutCubic' as EasingType,
     },
     {
         range: [2860, 4200],
-        from: { x: -2.8, y: 0.7, scale: 1.36, rotateX: 18, rotateY: -36, opacity: 1 },
-        to: { x: 0, y: 0, scale: 0.72, rotateX: -16, rotateY: 42, opacity: 0.86 },
-        easing: 'easeOutCubic' as const,
+        from: { x: -2.8, y: 0.7, scale: 1.36, rotateX: 18, rotateY: -36 },
+        to: { x: 0, y: 0, scale: 0.72, rotateX: -16, rotateY: 42 },
+        easing: 'easeOutCubic' as EasingType,
     },
 ];
 
@@ -111,10 +124,25 @@ const heroCopyTimeline = [
 
 const timelineCardTimeline = [
     {
-        range: [2960, 3460],
-        from: { x: -160, opacity: 0 },
+        range: [3360, 3860],
+        from: { x: 160, opacity: 0 },
         to: { x: 0, opacity: 1 },
         easing: 'easeOutCubic' as const,
+    },
+    {
+        range: [3860, 4180],
+        from: { x: 0, opacity: 1 },
+        to: { x: -120, opacity: 0 },
+        easing: 'easeInOutCubic' as const,
+    },
+];
+
+const finishPanelTimeline = [
+    {
+        range: [5320, 5600],
+        from: { y: 56, opacity: 0, scale: 0.96 },
+        to: { y: 0, opacity: 1, scale: 1 },
+        easing: 'easeInOutCubic' as const,
     },
 ];
 
@@ -272,10 +300,25 @@ function SolarSystemScene() {
         solarSystem.rotation.z = toRadians(-8);
         scene.add(solarSystem);
 
-        const sun = new THREE.Mesh(
-            new THREE.SphereGeometry(0.78, 64, 64),
-            new THREE.MeshBasicMaterial({ color: '#ffd166' }),
-        );
+        const sun = new THREE.Group();
+        const sunLayers = [
+            { radius: 0.38, color: '#fff8bd', opacity: 1 },
+            { radius: 0.6, color: '#ffd84d', opacity: 0.92 },
+            { radius: 0.82, color: '#ff9f2e', opacity: 0.7 },
+            { radius: 1.05, color: '#ff5f2e', opacity: 0.42 },
+        ];
+
+        sunLayers.forEach((layer) => {
+            sun.add(new THREE.Mesh(
+                new THREE.SphereGeometry(layer.radius, 64, 64),
+                new THREE.MeshBasicMaterial({
+                    color: layer.color,
+                    transparent: layer.opacity < 1,
+                    opacity: layer.opacity,
+                    blending: layer.opacity < 1 ? THREE.AdditiveBlending : THREE.NormalBlending,
+                }),
+            ));
+        });
         solarSystem.add(sun);
 
         const sunHalo = new THREE.Mesh(
@@ -369,18 +412,30 @@ function SolarSystemScene() {
     );
 }
 
-function NarrativePanel({ panel, scrollY }: { panel: typeof narrativePanels[number]; scrollY: number }) {
+function NarrativePanel({ panel, scrollY }: { panel: NarrativePanelConfig; scrollY: number }) {
     const [start, end] = panel.range;
     const fadeEnd = Math.min(start + 260, end);
+    const fadeOutStart = Math.max(end - 280, fadeEnd);
     const isActive = start <= scrollY && scrollY < end;
-    const timeline = useMemo(() => [
-        {
+    const timeline = useMemo(() => {
+        const segments = [{
             range: [start, fadeEnd] as [number, number],
             from: { y: 56, opacity: 0, scale: 0.96 },
             to: { y: 0, opacity: 1, scale: 1 },
             easing: 'easeOutCubic' as const,
-        },
-    ], [fadeEnd, start]);
+        }];
+
+        if (panel.fadeOut) {
+            segments.push({
+                range: [fadeOutStart, end] as [number, number],
+                from: { x: 0, y: 0, opacity: 1, scale: 1 },
+                to: { x: -120, y: 0, opacity: 0, scale: 0.98 },
+                easing: 'easeInOutCubic' as const,
+            });
+        }
+
+        return segments;
+    }, [end, fadeEnd, fadeOutStart, panel.fadeOut, start]);
 
     if (!isActive) return <section className={`narrative-section narrative-${panel.align}`} />;
 
@@ -479,13 +534,19 @@ function App() {
             </div>
 
             <section className="finish-section">
-                <article className="glass-panel finish-panel">
-                    <p className="eyebrow">Demo complete</p>
-                    <h2>Parallaxis 驱动滚动，Three.js 保持宇宙运转</h2>
-                    <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                        回到顶部
-                    </button>
-                </article>
+                <ScrollParallax
+                    timeline={finishPanelTimeline}
+                    reducedMotion="ignore"
+                    style={hiddenParallaxStyle}
+                >
+                    <article className="glass-panel finish-panel">
+                        <p className="eyebrow">Demo complete</p>
+                        <h2>Parallaxis 驱动滚动，Three.js 保持宇宙运转</h2>
+                        <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                            回到顶部
+                        </button>
+                    </article>
+                </ScrollParallax>
             </section>
         </main>
     );
